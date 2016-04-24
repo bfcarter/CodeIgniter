@@ -2,61 +2,98 @@
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 class Welcome extends CI_Controller {
-
-	/**
-	 * Index Page for this controller.
-	 *
-	 * Maps to the following URL
-	 * 		http://example.com/index.php/welcome
-	 *	- or -
-	 * 		http://example.com/index.php/welcome/index
-	 *	- or -
-	 * Since this controller is set as the default controller in
-	 * config/routes.php, it's displayed at http://example.com/
-	 *
-	 * So any other public methods not prefixed with an underscore will
-	 * map to /index.php/welcome/<method_name>
-	 * @see https://codeigniter.com/user_guide/general/urls.html
-	 */
+  
 	public function index()
 	{
-		$this->load->view('welcome_message');
-	}
-	public function click()
-    {
-        $action = $this->input->post('sign up'); // $_POST['start']; also works. 
-        if($action == 'sign up')
-        {
-            $this->load->view('login');
+           $data['view'] = 'login_view';
+           $this->load->view('load_view',$data);
         }
-    }
-}
-?>
+        public function signup()
+	{
+            $this->load->library('form_validation');
+            $this->form_validation->set_rules('name','Name','min_length[5]|max_length[20]');
+            $this->form_validation->set_rules('email','E-mail','valid_email');
+            $this->form_validation->set_rules('password','Password','min_length[5]|max_length[8]|callback_custom_rule');
+            $this->form_validation->set_rules('password_confirm','Confirm Password','matches[password]');
+            
+            if ($this->form_validation->run() == FALSE)
+                {
+                     
+                        $data['view'] = 'signup_view';
+                        $this->load->view('load_view',$data);
+                }
+                else
+                {
+                    $user = array(
+                               'name' => $_POST['name'],
+                               'email' => $_POST['email'],
+                               'password' => md5($_POST['password'])             
+                                );
+                    $this->load->model('Sample_model');
+                    if(!$this->Sample_model->add_user($user))
+                    {
+                        die('something went wrong while adding user');
+                    }else
+                    {
+                        $data['view'] = 'Success_view';
+                        $this->load->view('load_view',$data);
+                    }
+                }
+        }
+        function login()
+        {
+            $this->load->library('form_validation');    
+            $this->form_validation->set_rules('email','E-mail','valid_email');
+            $this->form_validation->set_rules('password','Password','min_length[5]|max_length[8]');
+                       
+            if ($this->form_validation->run() == FALSE)
+                {
+                     
+                        $data['view'] = 'login_view';
+                        $this->load->view('load_view',$data);
+                }
+                else
+                {
+                    $this->load->model('Sample_model');
+                    $email = $_POST['email'];
+                    $password = md5($_POST['Password']);
+                    if($this->Sample_model->check_user($email,$password) == 1)
+                    {
+                        redirect('welcome/member_area');
+                    } else {
+                        $data['view'] = 'error_view';
+                        $data['msg'] = 'Login failed';
+                        $this->load->view('load_view',$data);
+                    }
+                    
+                
+                }
+        }
 
-<?php if ( ! defined('BASEPATH')) exit('No direct script access allowed');
-class User extends CI_Controller {
-public function index()
-{
-$this->load->view('welcome_message');
+        public function member_area()
+        {
+            $data['view'] = 'memberarea_view';
+            $this->load->view('load_view', $data);
+        }
+    
+              
+                function custom_rule($str)
+        {
+             if ($str == $_POST['name'])
+                {
+                        $this->form_validation->set_message('custom_rule', 'password cannot be name!');
+                        return FALSE;
+                }
+                else
+                {
+                        return TRUE;
+                }
+        }
+        function logout()
+	{
+		$this->session->sess_destroy();
+		$this->index();
+	}
+        
 }
-public function register()
-{
-$this->load->view('welcome_message');//loads the register_view.php file in views folder
-}
-public function do_register()
-{
-if($this->input->post('register'))//$_POST["register"];
-{
-$this->load->model('user_model');//loads the user_model.php file in models folder
-if($this->user_model->add_user())
-{
-echo "hi ".$this->input->post('username')." Registred successfully" ;
-}
-else
-{
-echo "Registration failed";
-}
-}
-}
- 
-}
+
